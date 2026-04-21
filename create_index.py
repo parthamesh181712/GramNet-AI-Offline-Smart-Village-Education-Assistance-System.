@@ -1,31 +1,29 @@
 import pandas as pd
-import faiss
 import numpy as np
+import faiss
 from sentence_transformers import SentenceTransformer
-import pickle
 
+# Load data
 df = pd.read_csv("data/ncert_chunks.csv")
 chunks = df["content"].tolist()
 
-print(" Loading model...")
-model = SentenceTransformer("models/embeddings", local_files_only=True)
+# Load model
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
-print(" Creating embeddings...")
-embeddings = model.encode(
-    chunks,
-    normalize_embeddings=True
-)
+print(" Encoding chunks...")
+embeddings = model.encode(chunks)
 
+# Convert to numpy
 embeddings = np.array(embeddings).astype("float32")
 
-dimension = embeddings.shape[1]
-index = faiss.IndexFlatIP(dimension)
+# Create FAISS index
+dim = embeddings.shape[1]
+index = faiss.IndexFlatL2(dim)
 
 index.add(embeddings)
 
+# Save index + embeddings
 faiss.write_index(index, "data/faiss_index.bin")
+np.save("data/embeddings.npy", embeddings)
 
-with open("data/chunks.pkl", "wb") as f:
-    pickle.dump(chunks, f)
-
-print("✅ FAISS index created successfully!")
+print(" FAISS index created and saved!")
